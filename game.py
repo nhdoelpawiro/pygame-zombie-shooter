@@ -44,8 +44,9 @@ def make_forest():
             trees.append((x, y))
 
 
-def new_zombie():
+def new_zombie(zombie_type="normal"):
     side = random.choice(["top", "bottom", "left", "right"])
+
     if side == "top":
         pos = (random.randint(0, W), -30)
     elif side == "bottom":
@@ -55,18 +56,88 @@ def new_zombie():
     else:
         pos = (W + 30, random.randint(70, H))
 
-    return {"pos": pygame.Vector2(pos),
-            "speed": random.uniform(.7, 1.2),
-            "hp": 2}
+    # Normale zombie
+    if zombie_type == "normal":
+        return {
+            "pos": pygame.Vector2(pos),
+            "speed": random.uniform(0.7, 1.2),
+            "max_hp": 2,
+            "hp": 2,
+            "type": "normal",
+            "size": 15
+        }
+
+    # Snelle zombie
+    elif zombie_type == "fast":
+        return {
+            "pos": pygame.Vector2(pos),
+            "speed": random.uniform(2.0, 2.8),
+            "max_hp": 1,
+            "hp": 1,
+            "type": "fast",
+            "size": 12
+        }
+
+    # Tank zombie
+    elif zombie_type == "tank":
+        return {
+            "pos": pygame.Vector2(pos),
+            "speed": random.uniform(0.4, 0.7),
+            "max_hp": 8,
+            "hp": 8,
+            "type": "tank",
+            "size": 25
+        }
+
+    # Boss zombie
+    elif zombie_type == "boss":
+        return {
+            "pos": pygame.Vector2(pos),
+            "speed": 0.5,
+            "max_hp": 20,
+            "type": "boss",
+            "size": 40
+        }
+
+
 
 
 def start_round():
-    global round_timer
-    zombies.clear()
-    amount = 10 + (round_no - 1) * 15
-    for _ in range(amount):
-        zombies.append(new_zombie())
+    global round_no, round_timer
+
+    round_no += 1
     round_timer = 90
+
+    amount = 10 + (round_no - 1) * 15
+
+    for _ in range(amount):
+        chance = random.random()
+
+        if round_no <= 2:
+            zombie_type = "normal"
+
+        elif round_no <= 4:
+            zombie_type = "fast" if chance < 0.25 else "normal"
+
+        elif round_no <= 7:
+            if chance < 0.15:
+                zombie_type = "tank"
+            elif chance < 0.40:
+                zombie_type = "fast"
+            else:
+                zombie_type = "normal"
+
+        else:
+            if chance < 0.05:
+                zombie_type = "boss"
+            elif chance < 0.20:
+                zombie_type = "tank"
+            elif chance < 0.45:
+                zombie_type = "fast"
+            else:
+                zombie_type = "normal"
+
+        zombies.append(new_zombie(zombie_type))
 
 
 def draw_forest():
@@ -113,13 +184,54 @@ def draw_player():
 def draw_zombies():
     for z in zombies:
         p = z["pos"]
-        pygame.draw.circle(screen, (70, 75, 67), p, 17)
-        pygame.draw.rect(screen, (50, 53, 49),
-                         (p.x - 13, p.y + 9, 26, 25))
-        pygame.draw.circle(screen, (145, 155, 103),
-                           (int(p.x), int(p.y - 10)), 13)
-        pygame.draw.circle(screen, RED, (int(p.x - 5), int(p.y - 12)), 3)
-        pygame.draw.circle(screen, RED, (int(p.x + 5), int(p.y - 12)), 3)
+        size = z["size"]
+
+        if z["type"] == "normal":
+            head_color = (145, 155, 103)
+            body_color = (50, 53, 49)
+
+        elif z["type"] == "fast":
+            head_color = (220, 70, 70)
+            body_color = (100, 35, 35)
+
+        elif z["type"] == "tank":
+            head_color = (75, 105, 75)
+            body_color = (35, 45, 35)
+
+        elif z["type"] == "boss":
+            head_color = (150, 60, 170)
+            body_color = (55, 20, 65)
+
+        pygame.draw.circle(screen, body_color,
+                           (int(p.x), int(p.y + size)), size)
+
+        pygame.draw.circle(screen, head_color,
+                           (int(p.x), int(p.y)), size)
+
+        # Rode ogen
+        pygame.draw.circle(screen, (255, 0, 0),
+                           (int(p.x - size // 3), int(p.y - size // 4)), 3)
+
+        pygame.draw.circle(screen, (255, 0, 0),
+                           (int(p.x + size // 3), int(p.y - size // 4)), 3)
+
+        # HP-balk
+        bar_width = size * 2
+        hp_ratio = z["hp"] / z["max_hp"]
+
+        pygame.draw.rect(
+            screen,
+            (255, 0, 0),
+            (int(p.x - size), int(p.y - size - 8),
+             bar_width, 4)
+        )
+
+        pygame.draw.rect(
+            screen,
+            (0, 255, 0),
+            (int(p.x - size), int(p.y - size - 8),
+             int(bar_width * hp_ratio), 4)
+        )
 
 
 def shoot():
