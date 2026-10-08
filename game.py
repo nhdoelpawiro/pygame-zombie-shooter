@@ -36,7 +36,6 @@ shoot_timer = 0
 game_started = False
 game_over = False
 
-
 def new_zombie():
     side = random.choice(["top", "bottom", "left", "right"])
 
@@ -62,7 +61,6 @@ def new_zombie():
         "hp": 2
     }
 
-
 def start_round():
     global round_timer
 
@@ -74,7 +72,6 @@ def start_round():
         zombies.append(new_zombie())
 
     round_timer = 90
-
 
 def update_zombies():
     global health
@@ -90,7 +87,6 @@ def update_zombies():
         if zombie["pos"].distance_to(player) < 28:
             health -= 1
             zombie["pos"] -= direction * 8
-
 
 def draw_zombies():
     for zombie in zombies:
@@ -162,7 +158,6 @@ def update_player():
 
     camera.update(player)
 
-
 def draw_player():
     mouse = pygame.Vector2(pygame.mouse.get_pos())
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
@@ -225,7 +220,6 @@ def shoot():
         "vel": direction * 12
     })
 
-
 def update_bullets():
     for bullet in bullets[:]:
         bullet["pos"] += bullet["vel"]
@@ -246,7 +240,6 @@ def update_bullets():
                     zombies.remove(zombie)
 
                 break
-
 
 def draw_bullets():
     for bullet in bullets:
@@ -309,7 +302,6 @@ def draw_game_ui():
         ),
         (WIDTH - 190, 52)
     )
-
 
 def draw_round():
     if round_timer <= 0:
@@ -410,7 +402,6 @@ def menu():
 
     return button
 
-
 def end_screen():
     screen.fill(BLACK)
 
@@ -462,7 +453,6 @@ def end_screen():
 
     return button
 
-
 def reset_game():
     global health, round_no
     global game_over, shoot_timer
@@ -476,12 +466,9 @@ def reset_game():
     camera.update(player)
 
     bullets.clear()
-
     trees.clear()
     trees.extend(make_forest())
-
     start_round()
-
 
 running = True
 start_button = None
@@ -490,7 +477,6 @@ restart_button = None
 while running:
     clock.tick(60)
 
-    # Events
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
@@ -498,36 +484,30 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
 
-            # Start game
             if not game_started and start_button:
                 if start_button.collidepoint(event.pos):
                     game_started = True
                     reset_game()
 
-            # Shoot
             elif game_started and not game_over:
                 if event.button == 1 and shoot_timer <= 0:
                     shoot()
                     shoot_timer = 10
 
-            # Restart
             elif game_over and restart_button:
                 if restart_button.collidepoint(event.pos):
                     reset_game()
 
-    # Main menu
     if not game_started:
         start_button = menu()
         pygame.display.flip()
         continue
 
-    # Game over screen
     if game_over:
         restart_button = end_screen()
         pygame.display.flip()
         continue
 
-    # Update game
     update_player()
 
     if shoot_timer > 0:
@@ -536,15 +516,12 @@ while running:
     update_bullets()
     update_zombies()
 
-    # game stops if player dies
     if health <= 0:
         game_over = True
 
-    # round timer
     if round_timer > 0:
         round_timer -= 1
 
-    # start next round
     if not zombies and round_timer <= 0:
 
         if round_no < 10:
@@ -561,6 +538,5 @@ while running:
     draw_round()
 
     pygame.display.flip()
-
 
 pygame.quit()
