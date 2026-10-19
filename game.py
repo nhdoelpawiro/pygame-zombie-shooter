@@ -158,50 +158,64 @@ def update_player():
 
     camera.update(player)
 
-def draw_player():
-    mouse = pygame.Vector2(pygame.mouse.get_pos())
-    center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
 
+def draw_player():
+    import math
+
+    center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+    mouse = pygame.Vector2(pygame.mouse.get_pos())
     direction = mouse - center
 
-    if direction.length() == 0:
+    if direction.length() != 0:
+        direction = direction.normalize()
+    else:
         direction = pygame.Vector2(1, 0)
 
-    direction.normalize_ip()
+    side = pygame.Vector2(-direction.y, direction.x)
 
-    pygame.draw.circle(
-        screen,
-        (55, 57, 60),
-        center,
-        18
-    )
-    pygame.draw.rect(
-        screen,
-        (45, 45, 48),
-        (
-            center.x - 14,
-            center.y + 8,
-            28,
-            25
-        )
+    # Walking animation
+    moving = (
+        pygame.key.get_pressed()[pygame.K_w]
+        or pygame.key.get_pressed()[pygame.K_a]
+        or pygame.key.get_pressed()[pygame.K_s]
+        or pygame.key.get_pressed()[pygame.K_d]
     )
 
-    head = center + direction * 4
+    step = math.sin(pygame.time.get_ticks() / 100) * 5 if moving else 0
 
-    pygame.draw.circle(
-        screen,
-        (206, 166, 128),
-        head,
-        12
-    )
+    # Legs and black pants
+    for i in [-1, 1]:
+        leg = center + side * i * 6 + direction * (12 + step * i)
 
-    pygame.draw.line(
-        screen,
-        (30, 30, 30),
-        center - direction * 15,
-        center + direction * 42,
-        7
-    )
+        pygame.draw.line(screen, (20, 20, 20),
+                         center, leg, 9)
+
+        pygame.draw.circle(screen, (15, 15, 15),
+                           (int(leg.x), int(leg.y)), 5)
+
+    # White T-shirt
+    pygame.draw.circle(screen, (235, 235, 235),
+                       (int(center.x), int(center.y)), 15)
+
+    # Black hair
+    head = center + direction * 15
+
+    pygame.draw.circle(screen, (15, 15, 15),
+                       (int(head.x), int(head.y)), 10)
+
+    # Face
+    face = head + direction * 4
+
+    pygame.draw.circle(screen, (230, 180, 145),
+                       (int(face.x), int(face.y)), 6)
+
+    # Gun
+    start = center + direction * 10
+    end = center + direction * 38
+
+    pygame.draw.line(screen, (30, 30, 30),
+                     start, end, 6)
+
 
 def shoot():
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
