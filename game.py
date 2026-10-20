@@ -160,62 +160,89 @@ def update_player():
 
 
 def draw_player():
-    import math
-
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
     mouse = pygame.Vector2(pygame.mouse.get_pos())
     direction = mouse - center
-
     if direction.length() != 0:
         direction = direction.normalize()
     else:
         direction = pygame.Vector2(1, 0)
 
-    side = pygame.Vector2(-direction.y, direction.x)
+    # very small size
+    pixel = 2
+    ox, oy = int(center.x), int(center.y)
 
-    # Walking animation
-    moving = (
-        pygame.key.get_pressed()[pygame.K_w]
-        or pygame.key.get_pressed()[pygame.K_a]
-        or pygame.key.get_pressed()[pygame.K_s]
-        or pygame.key.get_pressed()[pygame.K_d]
-    )
+    # Colors
+    BLACK     = (10, 10, 12)
+    HAIR      = (25, 20, 35)
+    SKIN      = (230, 175, 145)
+    SCARF     = (130, 50, 110)
+    SHIRT     = (25, 25, 30)
+    PANTS     = (190, 190, 195)
+    BELT      = (20, 20, 25)
+    BLADE     = (200, 210, 220)
+    HANDLE    = (180, 160, 60)
 
-    step = math.sin(pygame.time.get_ticks() / 100) * 5 if moving else 0
+    sprite = [
+        ".......HHH........",
+        "......HHHHH.......",
+        ".....HHHHHHH......",
+        "....HHHHHHHHH.....",
+        "...HHHHHHHHHHH....",
+        "...HHHHSSSSHHH....",
+        "...HHHSSSSSSHH....",
+        "....HHSSSSSSHH....",
+        "....HSSSSSSSSH....",
+        ".....SSSSSSSS.....",
+        "....PPSSSSSSPP....",
+        "...PPPCCCCCCPPP...",
+        "...PPCCCCCCCCPP...",
+        "...PCCCCCCCCCCP...",
+        "....CCCCCCCCCC....",
+        "....CCccccccCC....",
+        "......sssssss......",
+        ".....ssssssss.....",
+        ".....sssssssss.....",
+        ".....WWWWWWWWWW.....",
+        "....WWWWWWWWWW....",
+        "....WWWBBBBWWW....",
+        "....WWWW..WWWW....",
+        "....WWW....WWW....",
+        "....WW......WW....",
+        "....WW......WW....",
+        "....BB......BB....",
+        "....BB......BB....",
+    ]
 
-    # Legs and black pants
-    for i in [-1, 1]:
-        leg = center + side * i * 6 + direction * (12 + step * i)
+    # Draw body
+    for y, row in enumerate(sprite):
+        for x, char in enumerate(row):
+            if char == '.':
+                continue
 
-        pygame.draw.line(screen, (20, 20, 20),
-                         center, leg, 9)
+            color = {
+                'H': HAIR,
+                'S': SKIN,
+                's': SKIN,          # lowercase skin
+                'P': SCARF,
+                'C': SHIRT,
+                'c': SHIRT,
+                'W': PANTS,
+                'w': PANTS,
+                'B': BELT,
+            }.get(char, BLACK)
 
-        pygame.draw.circle(screen, (15, 15, 15),
-                           (int(leg.x), int(leg.y)), 5)
+            px = ox + (x - len(row)//2) * pixel
+            py = oy + (y - len(sprite)//2) * pixel - 6
 
-    # White T-shirt
-    pygame.draw.circle(screen, (235, 235, 235),
-                       (int(center.x), int(center.y)), 15)
+            pygame.draw.rect(screen, color, (px, py, pixel, pixel))
 
-    # Black hair
-    head = center + direction * 15
+    # small knife
+    knife_start = center + direction * 10 + pygame.Vector2(4, 3)
+    knife_end   = center + direction * 22 + pygame.Vector2(4, 3)
 
-    pygame.draw.circle(screen, (15, 15, 15),
-                       (int(head.x), int(head.y)), 10)
-
-    # Face
-    face = head + direction * 4
-
-    pygame.draw.circle(screen, (230, 180, 145),
-                       (int(face.x), int(face.y)), 6)
-
-    # Gun
-    start = center + direction * 10
-    end = center + direction * 38
-
-    pygame.draw.line(screen, (30, 30, 30),
-                     start, end, 6)
-
+    pygame.draw.line(screen, HANDLE, knife_start, knife_start + direction * 4, 3)
+    pygame.draw.line(screen, BLADE, knife_start + direction * 4, knife_end, 2)
 
 def shoot():
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
