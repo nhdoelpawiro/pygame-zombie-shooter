@@ -15,7 +15,7 @@ def make_forest():
     trees = []
 
     for _ in range(100):
-        ## spawn trees at a random x and y range
+        ## spawn trees at a random x and iy range
         x = random.randint(-1000, 1000)
         y = random.randint(-800, 800)
 

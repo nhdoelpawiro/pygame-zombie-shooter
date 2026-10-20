@@ -36,6 +36,11 @@ shoot_timer = 0
 game_started = False
 game_over = False
 
+
+music = pygame.mixer.Sound('candyland.mp3')
+bulletsound = pygame.mixer.Sound('shoot.mp3')
+music.play()
+
 def new_zombie():
     side = random.choice(["top", "bottom", "left", "right"])
 
@@ -219,6 +224,7 @@ def shoot():
         "pos": player + direction * 35,
         "vel": direction * 12
     })
+    bulletsound.play()
 
 def update_bullets():
     for bullet in bullets[:]:
@@ -476,6 +482,7 @@ restart_button = None
 
 while running:
     clock.tick(60)
+
 
     for event in pygame.event.get():
 
