@@ -1,12 +1,11 @@
-
 import pygame
 import random
-import math
-
 from map import make_forest, draw_forest
 
 pygame.init()
-pygame.mixer.init()
+
+if not pygame.mixer.get_init():
+    pygame.mixer.init()
 
 WIDTH, HEIGHT = 1000, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -28,90 +27,68 @@ camera = pygame.Vector2(0, 160)
 speed = 4
 health = 100
 round_no = 1
+round_timer = 0
+shoot_timer = 0
+zombie_sound_timer = 120
 
 zombies = []
 bullets = []
 trees = []
 
-round_timer = 0
-shoot_timer = 0
-
 game_started = False
 game_over = False
 
-# --------------------------------------------------
-# SOUND
-# --------------------------------------------------
-
 music = pygame.mixer.Sound("./sfx/banditradio.mp3")
-music_menu = pygame.mixer.Sound("./sfx/menu.mp3")
-music.set_volume(0.5)
-music_menu.set_volume(0.4)
-
-bulletsound = pygame.mixer.Sound("./sfx/shoot.mp3")
-walksound = pygame.mixer.Sound("./sfx/walk.mp3")
+menu_music = pygame.mixer.Sound("./sfx/menu.mp3")
+shoot_sound = pygame.mixer.Sound("./sfx/shoot.mp3")
+walk_sound = pygame.mixer.Sound("./sfx/walk.mp3")
 
 zombie_sounds = [
-    pygame.mixer.Sound("./sfx/zombie1.mp3"),
-    pygame.mixer.Sound("./sfx/zombie2.mp3"),
-    pygame.mixer.Sound("./sfx/zombie3.mp3"),
-    pygame.mixer.Sound("./sfx/zombie4.mp3"),
-    pygame.mixer.Sound("./sfx/zombie5.mp3"),
-    pygame.mixer.Sound("./sfx/zombie6.mp3"),
-    pygame.mixer.Sound("./sfx/zombie7.mp3"),
-    pygame.mixer.Sound("./sfx/zombie8.mp3"),
-    pygame.mixer.Sound("./sfx/zombie9.mp3")
+    pygame.mixer.Sound(f"./sfx/zombie{i}.mp3")
+    for i in range(1, 5)
 ]
 
-walksound.set_volume(4)
-bulletsound.set_volume(0.7)
+music.set_volume(0.5)
+menu_music.set_volume(0.4)
+shoot_sound.set_volume(0.7)
+walk_sound.set_volume(0.7)
 
 for sound in zombie_sounds:
     sound.set_volume(0.8)
 
-walkchannel = pygame.mixer.Channel(1)
-shootchannel = pygame.mixer.Channel(2)
-
-# Use separate channels so zombie sounds don't constantly
-# interrupt one another.
+walk_channel = pygame.mixer.Channel(1)
+shoot_channel = pygame.mixer.Channel(2)
 zombie_channels = [
-    pygame.mixer.Channel(3),
-    pygame.mixer.Channel(4),
-    pygame.mixer.Channel(5),
-    pygame.mixer.Channel(6)
+    pygame.mixer.Channel(i) for i in range(3, 7)
 ]
 
-# Time until the next ambient zombie sound
-zombie_sound_timer = 120
+menu_music.play(-1)
 
-music_menu.play(loops=-1)
-
-
-# --------------------------------------------------
-# ZOMBIES
-# --------------------------------------------------
 
 def new_zombie():
     side = random.choice(["top", "bottom", "left", "right"])
 
-    if side == "top":
-        x = player.x + random.randint(-700, 700)
-        y = player.y - 600
-    elif side == "bottom":
-        x = player.x + random.randint(-700, 700)
-        y = player.y + 600
-    elif side == "left":
-        x = player.x - 600
-        y = player.y + random.randint(-400, 400)
-    else:
-        x = player.x + 600
-        y = player.y + random.randint(-400, 400)
+    offsets = {
+        "top": (random.randint(-700, 700), -600),
+        "bottom": (random.randint(-700, 700), 600),
+        "left": (-600, random.randint(-400, 400)),
+        "right": (600, random.randint(-400, 400))
+    }
+
+    x, y = offsets[side]
 
     return {
-        "pos": pygame.Vector2(x, y),
+        "pos": player + pygame.Vector2(x, y),
         "speed": random.uniform(0.7, 1.2),
         "hp": 2
     }
+
+
+def play_zombie_sound():
+    for channel in zombie_channels:
+        if not channel.get_busy():
+            channel.play(random.choice(zombie_sounds))
+            return
 
 
 def start_round():
@@ -120,26 +97,11 @@ def start_round():
     zombies.clear()
     bullets.clear()
 
-    amount = 10 + (round_no - 1) * 15
-
-    for _ in range(amount):
+    for _ in range(10 + (round_no - 1) * 15):
         zombies.append(new_zombie())
 
     round_timer = 90
-    zombie_sound_timer = 60
-
-
-def play_zombie_sound():
-    """Play a zombie sound on an available channel."""
-    available_channels = [
-        channel for channel in zombie_channels
-        if not channel.get_busy()
-    ]
-
-    if available_channels:
-        channel = random.choice(available_channels)
-        sound = random.choice(zombie_sounds)
-        channel.play(sound)
+    zombie_sound_timer = 120
 
 
 def update_zombies():
@@ -148,171 +110,110 @@ def update_zombies():
     for zombie in zombies:
         direction = player - zombie["pos"]
 
-        if direction.length() > 0:
-            direction.normalize_ip()
+        if direction.length_squared() > 0:
+            direction = direction.normalize()
             zombie["pos"] += direction * zombie["speed"]
 
         if zombie["pos"].distance_to(player) < 28:
-            health -= 1
+            health = max(0, health - 1)
             zombie["pos"] -= direction * 8
-
-            # Sound when a zombie attacks
             play_zombie_sound()
 
-    # Ambient zombie noises while zombies are alive
     if zombies:
         zombie_sound_timer -= 1
 
         if zombie_sound_timer <= 0:
             play_zombie_sound()
-
-            # Random delay between ambient sounds
-            zombie_sound_timer = random.randint(100, 240)
+            zombie_sound_timer = random.randint(120, 300)
 
 
 def draw_zombies():
     for zombie in zombies:
-        pos = zombie["pos"] - camera
-        pos += pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+        pos = zombie["pos"] - camera + pygame.Vector2(
+            WIDTH // 2, HEIGHT // 2
+        )
 
-        if (
-            pos.x < -100
-            or pos.x > WIDTH + 100
-            or pos.y < -100
-            or pos.y > HEIGHT + 100
-        ):
+        if not screen.get_rect().inflate(200, 200).collidepoint(pos):
             continue
 
-        # Body
-        pygame.draw.circle(
-            screen, (70, 75, 67), pos, 17
-        )
-
+        pygame.draw.circle(screen, (70, 75, 67), pos, 17)
         pygame.draw.rect(
-            screen,
-            (50, 53, 49),
+            screen, (50, 53, 49),
             (pos.x - 13, pos.y + 9, 26, 25)
         )
-
-        # Head
         pygame.draw.circle(
-            screen,
-            (145, 155, 103),
-            (int(pos.x), int(pos.y - 10)),
-            13
+            screen, (145, 155, 103),
+            (int(pos.x), int(pos.y - 10)), 13
         )
 
-        # Glowing red eyes
-        pygame.draw.circle(
-            screen,
-            RED,
-            (int(pos.x - 5), int(pos.y - 12)),
-            3
-        )
+        for eye_x in (-5, 5):
+            pygame.draw.circle(
+                screen, RED,
+                (int(pos.x + eye_x), int(pos.y - 12)), 3
+            )
 
-        pygame.draw.circle(
-            screen,
-            RED,
-            (int(pos.x + 5), int(pos.y - 12)),
-            3
-        )
-
-
-# --------------------------------------------------
-# PLAYER
-# --------------------------------------------------
 
 def update_player():
-    global player
-
     keys = pygame.key.get_pressed()
-    movement = pygame.Vector2()
 
-    if keys[pygame.K_w]:
-        movement.y -= 1
-    if keys[pygame.K_s]:
-        movement.y += 1
-    if keys[pygame.K_a]:
-        movement.x -= 1
-    if keys[pygame.K_d]:
-        movement.x += 1
+    movement = pygame.Vector2(
+        int(keys[pygame.K_d]) - int(keys[pygame.K_a]),
+        int(keys[pygame.K_s]) - int(keys[pygame.K_w])
+    )
 
-    if movement.length() > 0:
-        movement.normalize_ip()
-        player += movement * speed
+    if movement.length_squared() > 0:
+        movement = movement.normalize()
+        player.x = max(-1000, min(1000, player.x + movement.x * speed))
+        player.y = max(-800, min(800, player.y + movement.y * speed))
 
-        if not walkchannel.get_busy():
-            walkchannel.play(walksound, loops=-1)
+        if not walk_channel.get_busy():
+            walk_channel.play(walk_sound, -1)
     else:
-        walkchannel.stop()
-
-    player.x = max(-1000, min(1000, player.x))
-    player.y = max(-800, min(800, player.y))
+        walk_channel.stop()
 
     camera.update(player)
 
 
 def draw_player():
-    mouse = pygame.Vector2(pygame.mouse.get_pos())
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+    direction = pygame.Vector2(pygame.mouse.get_pos()) - center
 
-    direction = mouse - center
-
-    if direction.length() == 0:
+    if direction.length_squared() > 0:
+        direction = direction.normalize()
+    else:
         direction = pygame.Vector2(1, 0)
 
-    direction.normalize_ip()
-
-    pygame.draw.circle(
-        screen, (55, 57, 60), center, 18
-    )
-
+    pygame.draw.circle(screen, (55, 57, 60), center, 18)
     pygame.draw.rect(
-        screen,
-        (45, 45, 48),
+        screen, (45, 45, 48),
         (center.x - 14, center.y + 8, 28, 25)
     )
-
-    head = center + direction * 4
-
     pygame.draw.circle(
-        screen,
-        (206, 166, 128),
-        head,
-        12
+        screen, (206, 166, 128),
+        center + direction * 4, 12
     )
-
     pygame.draw.line(
-        screen,
-        (30, 30, 30),
+        screen, (30, 30, 30),
         center - direction * 15,
-        center + direction * 42,
-        7
+        center + direction * 42, 7
     )
 
-
-# --------------------------------------------------
-# SHOOTING
-# --------------------------------------------------
 
 def shoot():
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+    direction = pygame.Vector2(pygame.mouse.get_pos()) - center
 
-    direction = pygame.Vector2(
-        pygame.mouse.get_pos()
-    ) - center
-
-    if direction.length() == 0:
+    if direction.length_squared() == 0:
         return
 
-    direction.normalize_ip()
+    direction = direction.normalize()
 
     bullets.append({
         "pos": player + direction * 35,
         "vel": direction * 12
     })
 
-    shootchannel.play(bulletsound)
+    shoot_channel.play(shoot_sound)
 
 
 def update_bullets():
@@ -325,10 +226,8 @@ def update_bullets():
 
         for zombie in zombies[:]:
             if bullet["pos"].distance_to(zombie["pos"]) < 20:
+                bullets.remove(bullet)
                 zombie["hp"] -= 1
-
-                if bullet in bullets:
-                    bullets.remove(bullet)
 
                 if zombie["hp"] <= 0:
                     zombies.remove(zombie)
@@ -338,117 +237,68 @@ def update_bullets():
 
 def draw_bullets():
     for bullet in bullets:
-        pos = bullet["pos"] - camera
-        pos += pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+        pos = bullet["pos"] - camera + pygame.Vector2(
+            WIDTH // 2, HEIGHT // 2
+        )
 
-        if (
-            -10 < pos.x < WIDTH + 10
-            and -10 < pos.y < HEIGHT + 10
-        ):
+        if screen.get_rect().collidepoint(pos):
             pygame.draw.circle(
-                screen,
-                YELLOW,
-                (int(pos.x), int(pos.y)),
-                4
+                screen, YELLOW,
+                (int(pos.x), int(pos.y)), 4
             )
 
 
-# --------------------------------------------------
-# UI
-# --------------------------------------------------
+def draw_text(text, text_font, color, position):
+    image = text_font.render(text, True, color)
+    screen.blit(image, image.get_rect(center=position))
+
 
 def draw_game_ui():
     pygame.draw.rect(screen, BLACK, (15, 15, 205, 35))
-
     pygame.draw.rect(
-        screen,
-        RED,
-        (18, 18, max(0, health) * 2, 29)
+        screen, RED, (18, 18, health * 2, 29)
     )
 
     screen.blit(
         small_font.render(f"HP: {health}", True, WHITE),
         (25, 21)
     )
-
     screen.blit(
         font.render(f"Round: {round_no}/10", True, WHITE),
         (WIDTH - 190, 18)
     )
-
     screen.blit(
-        small_font.render(
-            f"Zombies: {len(zombies)}", True, WHITE
-        ),
+        small_font.render(f"Zombies: {len(zombies)}", True, WHITE),
         (WIDTH - 190, 52)
     )
 
 
-def draw_round():
-    if round_timer <= 0:
-        return
-
-    progress = 1 - round_timer / 90
-    size = int(55 + progress * 35)
-
-    round_font = pygame.font.Font(None, size)
-
-    text = round_font.render(
-        f"ROUND {round_no}", True, RED
+def make_button(text, y, height=70):
+    button = pygame.Rect(
+        WIDTH // 2 - 130, y, 260, height
     )
 
-    screen.blit(
-        text,
-        text.get_rect(
-            center=(WIDTH // 2, HEIGHT // 2)
-        )
-    )
+    pygame.draw.rect(screen, RED, button)
+    pygame.draw.rect(screen, WHITE, button, 2)
+    draw_text(text, font, WHITE, button.center)
+
+    return button
 
 
 def menu():
     screen.fill(BLACK)
 
-    title = big_font.render("DEAD WOODS", True, WHITE)
-
-    screen.blit(
-        title,
-        title.get_rect(center=(WIDTH // 2, 190))
-    )
-
-    subtitle = font.render(
+    draw_text("DEAD WOODS", big_font, WHITE, (WIDTH // 2, 190))
+    draw_text(
         "Survive 10 rounds in the forest",
-        True,
-        (175, 180, 165)
+        font, (175, 180, 165), (WIDTH // 2, 255)
     )
 
-    screen.blit(
-        subtitle,
-        subtitle.get_rect(center=(WIDTH // 2, 255))
-    )
+    button = make_button("START GAME", 330, 75)
 
-    button = pygame.Rect(
-        WIDTH // 2 - 130, 330, 260, 75
-    )
-
-    pygame.draw.rect(screen, RED, button)
-    pygame.draw.rect(screen, WHITE, button, 2)
-
-    text = font.render("START GAME", True, WHITE)
-
-    screen.blit(
-        text,
-        text.get_rect(center=button.center)
-    )
-
-    controls = small_font.render(
+    draw_text(
         "WASD = Move   Mouse = Aim   Left Click = Shoot",
-        True,
-        WHITE
-    )
-
-    screen.blit(
-        controls,
-        controls.get_rect(center=(WIDTH // 2, 470))
+        small_font, WHITE, (WIDTH // 2, 470)
     )
 
     return button
@@ -457,47 +307,22 @@ def menu():
 def end_screen():
     screen.fill(BLACK)
 
-    if health <= 0:
-        title = big_font.render("YOU DIED", True, RED)
-    else:
-        title = big_font.render(
-            "YOU SURVIVED!", True, WHITE
-        )
+    title = "YOU DIED" if health <= 0 else "YOU SURVIVED!"
+    color = RED if health <= 0 else WHITE
 
-    screen.blit(
-        title,
-        title.get_rect(center=(WIDTH // 2, 220))
-    )
+    draw_text(title, big_font, color, (WIDTH // 2, 220))
 
-    button = pygame.Rect(
-        WIDTH // 2 - 130, 320, 260, 70
-    )
+    return make_button("PLAY AGAIN", 320)
 
-    pygame.draw.rect(screen, RED, button)
-
-    text = font.render("PLAY AGAIN", True, WHITE)
-
-    screen.blit(
-        text,
-        text.get_rect(center=button.center)
-    )
-
-    return button
-
-
-# --------------------------------------------------
-# RESET
-# --------------------------------------------------
 
 def reset_game():
-    global health, round_no
-    global game_over, shoot_timer, zombie_sound_timer
+    global health, round_no, game_over
+    global shoot_timer, zombie_sound_timer
 
     health = 100
     round_no = 1
     game_over = False
     shoot_timer = 0
-    zombie_sound_timer = 120
 
     player.update(0, 160)
     camera.update(player)
@@ -510,19 +335,19 @@ def reset_game():
     for channel in zombie_channels:
         channel.stop()
 
+    walk_channel.stop()
+    music.stop()
+    menu_music.stop()
+    music.play(-1)
+
     start_round()
 
-    music_menu.stop()
-    music.play(loops=-1)
 
+trees.extend(make_forest())
 
-# --------------------------------------------------
-# MAIN LOOP
-# --------------------------------------------------
-
-running = True
 start_button = None
 restart_button = None
+running = True
 
 while running:
     clock.tick(60)
@@ -531,20 +356,20 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if not game_started and start_button:
                 if start_button.collidepoint(event.pos):
                     game_started = True
                     reset_game()
 
-            elif game_started and not game_over:
-                if event.button == 1 and shoot_timer <= 0:
-                    shoot()
-                    shoot_timer = 10
-
             elif game_over and restart_button:
                 if restart_button.collidepoint(event.pos):
                     reset_game()
+
+            elif game_started and not game_over:
+                if shoot_timer <= 0:
+                    shoot()
+                    shoot_timer = 10
 
     if not game_started:
         start_button = menu()
@@ -557,46 +382,41 @@ while running:
         continue
 
     update_player()
-
-    if shoot_timer > 0:
-        shoot_timer -= 1
-
     update_bullets()
     update_zombies()
 
+    shoot_timer = max(0, shoot_timer - 1)
+    round_timer = max(0, round_timer - 1)
+
     if health <= 0:
         game_over = True
-        music.stop()
-        music_menu.stop()
-        walkchannel.stop()
 
-        for channel in zombie_channels:
-            channel.stop()
-
-    if round_timer > 0:
-        round_timer -= 1
-
-    if not zombies and round_timer <= 0:
+    elif not zombies and round_timer == 0:
         if round_no < 10:
             round_no += 1
             start_round()
         else:
             game_over = True
-            music.stop()
-            music_menu.stop()
-            walkchannel.stop()
 
-            for channel in zombie_channels:
-                channel.stop()
+    if game_over:
+        music.stop()
+        walk_channel.stop()
+
+        for channel in zombie_channels:
+            channel.stop()
 
     draw_forest(screen, trees, camera)
     draw_zombies()
     draw_bullets()
     draw_player()
     draw_game_ui()
-    draw_round()
+
+    if round_timer > 0:
+        draw_text(
+            f"ROUND {round_no}",
+            big_font, RED, (WIDTH // 2, HEIGHT // 2)
+        )
 
     pygame.display.flip()
 
-# Clean shutdown
 pygame.quit()

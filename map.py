@@ -64,7 +64,6 @@ def draw_forest(screen, trees, camera):
         ):
             continue
 
-        # trunk and leaves
         pygame.draw.rect(
             screen,
             TRUNK,
