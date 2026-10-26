@@ -37,9 +37,11 @@ game_started = False
 game_over = False
 
 
-music = pygame.mixer.Sound('candyland.mp3')
-bulletsound = pygame.mixer.Sound('shoot.mp3')
-music.play()
+music = pygame.mixer.Sound('./sfx/banditradio.mp3')
+music_menu = pygame.mixer.Sound('./sfx/menu.mp3')
+bulletsound = pygame.mixer.Sound('./sfx/shoot.mp3')
+
+music_menu.play(loops=-1)
 
 def new_zombie():
     side = random.choice(["top", "bottom", "left", "right"])
@@ -475,6 +477,8 @@ def reset_game():
     trees.clear()
     trees.extend(make_forest())
     start_round()
+    music_menu.stop()
+    music.play(loops=-1)
 
 running = True
 start_button = None
@@ -494,6 +498,10 @@ while running:
             if not game_started and start_button:
                 if start_button.collidepoint(event.pos):
                     game_started = True
+
+                    music_menu.stop()
+                    music.play(loops=-1)
+
                     reset_game()
 
             elif game_started and not game_over:
@@ -525,6 +533,8 @@ while running:
 
     if health <= 0:
         game_over = True
+        music.stop()
+        music_menu.stop()
 
     if round_timer > 0:
         round_timer -= 1
@@ -536,6 +546,8 @@ while running:
             start_round()
         else:
             game_over = True
+            music.stop()
+            music_menu.stop()
 
     draw_forest(screen, trees, camera)
     draw_zombies()
