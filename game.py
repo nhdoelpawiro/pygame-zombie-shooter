@@ -2,6 +2,7 @@ import pygame
 import random
 from map import make_forest, draw_forest
 
+pygame.init()
 
 WIDTH, HEIGHT = 1000, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
