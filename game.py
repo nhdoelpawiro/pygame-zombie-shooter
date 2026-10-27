@@ -407,62 +407,106 @@ def update_player():
     camera.update(player)
 
 
+
+
 # -------------------- DRAW PLAYER --------------------
 
 def draw_player():
-    center = pygame.Vector2(
-        WIDTH // 2, HEIGHT // 2
-    )
+    center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
 
-    direction = (
-        pygame.Vector2(pygame.mouse.get_pos()) - center
-    )
+    mouse = pygame.Vector2(pygame.mouse.get_pos())
+    direction = mouse - center
 
     if direction.length_squared() > 0:
         direction = direction.normalize()
     else:
         direction = pygame.Vector2(1, 0)
 
-    # Player body
-    pygame.draw.circle(
-        screen, (55, 57, 60), center, 18
-    )
+    pixel = 2
+    ox, oy = int(center.x), int(center.y)
 
-    pygame.draw.rect(
-        screen,
-        (45, 45, 48),
-        (
-            center.x - 14,
-            center.y + 8,
-            28,
-            25
-        )
-    )
+    # Player colors
+    BLACK = (10, 10, 12)
+    HAIR = (25, 20, 35)
+    SKIN = (230, 175, 145)
+    SCARF = (130, 50, 110)
+    SHIRT = (25, 25, 30)
+    PANTS = (190, 190, 195)
+    BELT = (20, 20, 25)
 
-    # Player head
-    pygame.draw.circle(
-        screen,
-        (206, 166, 128),
-        center + direction * 4,
-        12
-    )
+    # Pixel-art player sprite
+    sprite = [
+        ".......HHH........",
+        "......HHHHH.......",
+        ".....HHHHHHH......",
+        "....HHHHHHHHH.....",
+        "...HHHHHHHHHHH....",
+        "...HHHHSSSSHHH....",
+        "...HHHSSSSSSHH....",
+        "....HHSSSSSSHH....",
+        "....HSSSSSSSSH....",
+        ".....SSSSSSSS.....",
+        "....PPSSSSSSPP....",
+        "...PPPCCCCCCPPP...",
+        "...PPCCCCCCCCPP...",
+        "...PCCCCCCCCCCP...",
+        "....CCCCCCCCCC....",
+        "....CCccccccCC....",
+        "......sssssss.....",
+        ".....ssssssss.....",
+        ".....sssssssss....",
+        ".....WWWWWWWWWW...",
+        "....WWWWWWWWWW....",
+        "....WWWBBBBWWW....",
+        "....WWWW..WWWW....",
+        "....WWW....WWW....",
+        "....WW......WW....",
+        "....WW......WW....",
+        "....BB......BB....",
+        "....BB......BB....",
+    ]
 
-    # Rotate the AK toward the mouse
-    angle = -pygame.math.Vector2(1, 0).angle_to(
-        direction
-    )
+    # Draw player body
+    for y, row in enumerate(sprite):
+        for x, char in enumerate(row):
+            if char == ".":
+                continue
 
-    rotated_ak = pygame.transform.rotate(
-        ak_img, angle
-    )
+            color = {
+                "H": HAIR,
+                "S": SKIN,
+                "s": SKIN,
+                "P": SCARF,
+                "C": SHIRT,
+                "c": SHIRT,
+                "W": PANTS,
+                "w": PANTS,
+                "B": BELT,
+            }.get(char, BLACK)
 
-    weapon_pos = center + direction * 30
+            px = ox + (x - len(row) // 2) * pixel
+            py = oy + (y - len(sprite) // 2) * pixel - 6
+
+            pygame.draw.rect(
+                screen,
+                color,
+                (px, py, pixel, pixel)
+            )
+
+    # Rotate the AK-47 toward the mouse
+    angle = -pygame.Vector2(1, 0).angle_to(direction)
+
+    rotated_ak = pygame.transform.rotate(ak_img, angle)
+
+    # Position the AK in front of the player
+    weapon_pos = center + direction * 25
 
     weapon_rect = rotated_ak.get_rect(
-        center=weapon_pos
+        center=(int(weapon_pos.x), int(weapon_pos.y))
     )
 
     screen.blit(rotated_ak, weapon_rect)
+
 
 
 # -------------------- SHOOTING --------------------
