@@ -1,4 +1,3 @@
-
 import pygame
 
 from settings import WIDTH, HEIGHT
@@ -86,22 +85,24 @@ def draw_player(screen, ak_img):
         "....BB......BB....",
     ]
 
+    colors = {
+        "H": HAIR,
+        "S": SKIN,
+        "s": SKIN,
+        "P": SCARF,
+        "C": SHIRT,
+        "c": SHIRT,
+        "W": PANTS,
+        "w": PANTS,
+        "B": BELT,
+    }
+
     for y, row in enumerate(sprite):
         for x, char in enumerate(row):
             if char == ".":
                 continue
 
-            color = {
-                "H": HAIR,
-                "S": SKIN,
-                "s": SKIN,
-                "P": SCARF,
-                "C": SHIRT,
-                "c": SHIRT,
-                "W": PANTS,
-                "w": PANTS,
-                "B": BELT,
-            }.get(char, BLACK)
+            color = colors.get(char, BLACK)
 
             px = ox + (x - len(row) // 2) * pixel
             py = oy + (y - len(sprite) // 2) * pixel - 6

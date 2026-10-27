@@ -3,46 +3,47 @@ import random
 import pygame
 from settings import WIDTH, HEIGHT, RED
 
+MAP_LEFT = -1000
+MAP_RIGHT = 1000
+MAP_TOP = -800
+MAP_BOTTOM = 800
+
 def load_zombie_images():
     def load_image(path, size):
-        image = pygame.image.load(path).convert()
-        image = pygame.transform.scale(image, size)
-        return remove_background(image)
+        image = pygame.image.load(path).convert_alpha()
+        return pygame.transform.scale(image, size)
 
     return {
-        "normal": load_image("assets/zombie_image.jpeg", (75, 95)),
-        "fast": load_image("assets/snelle_image.png", (60, 75)),
-        "tank": load_image("assets/tank_image.webp", (90, 105)),
-        "boss": load_image("assets/boss_image.png", (100, 120)),
+        "normal": load_image("assets/zombie.png", (75, 95)),
+        "fast": load_image("assets/zombie.png", (60, 75)),
+        "tank": load_image("assets/zombie.png", (90, 105)),
+        "boss": load_image("assets/zombie.png", (100, 120)),
     }
-
-
-def remove_background(image):
-    image = image.convert_alpha()
-
-    for x in range(image.get_width()):
-        for y in range(image.get_height()):
-            r, g, b, a = image.get_at((x, y))
-
-            if r < 30 and g < 30 and b < 30:
-                image.set_at((x, y), (r, g, b, 0))
-            elif r > 235 and g > 235 and b > 235:
-                image.set_at((x, y), (r, g, b, 0))
-
-    return image
 
 
 def new_zombie(zombie_type="normal"):
     side = random.choice(["top", "bottom", "left", "right"])
 
     if side == "top":
-        pos = (random.randint(0, WIDTH), -30)
+        pos = (
+            random.randint(MAP_LEFT, MAP_RIGHT),
+            MAP_TOP
+        )
     elif side == "bottom":
-        pos = (random.randint(0, WIDTH), HEIGHT + 30)
+        pos = (
+            random.randint(MAP_LEFT, MAP_RIGHT),
+            MAP_BOTTOM
+        )
     elif side == "left":
-        pos = (-30, random.randint(70, HEIGHT))
+        pos = (
+            MAP_LEFT,
+            random.randint(MAP_TOP, MAP_BOTTOM)
+        )
     else:
-        pos = (WIDTH + 30, random.randint(70, HEIGHT))
+        pos = (
+            MAP_RIGHT,
+            random.randint(MAP_TOP, MAP_BOTTOM)
+        )
 
     stats = {
         "normal": (0.7, 1.2, 2, 15),
@@ -61,7 +62,6 @@ def new_zombie(zombie_type="normal"):
         "type": zombie_type,
         "size": size,
     }
-
 
 def start_round(zombies, round_no):
     amount = 10 + (round_no - 1) * 5

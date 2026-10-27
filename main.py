@@ -1,5 +1,4 @@
 import pygame
-
 from settings import WIDTH, HEIGHT, FPS, RED
 from map import make_forest, draw_forest
 from audio import load_audio

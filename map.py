@@ -6,6 +6,12 @@ import math
 WIDTH = 1000
 HEIGHT = 650
 
+# Map boundaries
+MAP_LEFT = -1000
+MAP_RIGHT = 1000
+MAP_TOP = -800
+MAP_BOTTOM = 800
+
 # Forest colors
 GREEN = (53, 65, 49)
 DARK = (38, 48, 38)
@@ -17,27 +23,50 @@ BUSH = (45, 62, 40)
 ROCK = (83, 83, 72)
 LEAF = (100, 91, 57)
 SHADOW = (50, 57, 50)
+BLACK = (0, 0, 0)
 
 
 def make_forest():
     trees = []
+    rng = random.Random(12)
 
-    random.seed(12)
-
+    # Generate trees only inside the playable map
     for _ in range(180):
-        x = random.randint(-1400, 1400)
-        y = random.randint(-1200, 1200)
+        x = rng.randint(MAP_LEFT + 40, MAP_RIGHT - 40)
+        y = rng.randint(MAP_TOP + 40, MAP_BOTTOM - 40)
+
+        # Keep the player's starting area clear
         if -180 < x < 180 and -100 < y < 300:
             continue
 
-        size = random.randint(20, 38)
+        size = rng.randint(20, 38)
         trees.append((x, y, size))
 
-    random.seed()
     return trees
 
 
 def draw_forest(screen, trees, camera):
+    # Make everything outside the map black
+    screen.fill(BLACK)
+
+    # Convert world boundaries to screen coordinates
+    left = MAP_LEFT - camera.x + WIDTH // 2
+    right = MAP_RIGHT - camera.x + WIDTH // 2
+    top = MAP_TOP - camera.y + HEIGHT // 2
+    bottom = MAP_BOTTOM - camera.y + HEIGHT // 2
+
+    map_rect = pygame.Rect(
+        round(left),
+        round(top),
+        round(right - left),
+        round(bottom - top)
+    )
+
+    # Restrict all forest drawing to the playable map
+    old_clip = screen.get_clip()
+    screen.set_clip(old_clip.clip(map_rect))
+
+    # Ground
     screen.fill(GREEN)
 
     # Ground details
@@ -50,7 +79,10 @@ def draw_forest(screen, trees, camera):
 
         if 0 < sx < WIDTH and 0 < sy < HEIGHT:
             pygame.draw.circle(
-                screen, DARK, (int(sx), int(sy)), 2
+                screen,
+                DARK,
+                (int(sx), int(sy)),
+                2
             )
 
     # Grass patches
@@ -63,9 +95,11 @@ def draw_forest(screen, trees, camera):
 
         if -10 < sx < WIDTH + 10 and -10 < sy < HEIGHT + 10:
             pygame.draw.line(
-                screen, GRASS,
+                screen,
+                GRASS,
                 (int(sx), int(sy)),
-                (int(sx + 4), int(sy - 5)), 2
+                (int(sx + 4), int(sy - 5)),
+                2
             )
 
     # Fallen leaves
@@ -78,7 +112,8 @@ def draw_forest(screen, trees, camera):
 
         if 0 < sx < WIDTH and 0 < sy < HEIGHT:
             pygame.draw.ellipse(
-                screen, LEAF,
+                screen,
+                LEAF,
                 (int(sx), int(sy), 5, 3)
             )
 
@@ -93,21 +128,29 @@ def draw_forest(screen, trees, camera):
         if -40 < sx < WIDTH + 40 and -40 < sy < HEIGHT + 40:
             if i % 2 == 0:
                 pygame.draw.ellipse(
-                    screen, ROCK,
+                    screen,
+                    ROCK,
                     (int(sx), int(sy), 20, 13)
                 )
+
                 pygame.draw.ellipse(
-                    screen, DARK,
+                    screen,
+                    DARK,
                     (int(sx + 3), int(sy + 8), 16, 5)
                 )
             else:
                 pygame.draw.circle(
-                    screen, BUSH,
-                    (int(sx), int(sy)), 13
+                    screen,
+                    BUSH,
+                    (int(sx), int(sy)),
+                    13
                 )
+
                 pygame.draw.circle(
-                    screen, TREE,
-                    (int(sx - 4), int(sy - 3)), 8
+                    screen,
+                    TREE,
+                    (int(sx - 4), int(sy - 3)),
+                    8
                 )
 
     # Fallen logs
@@ -120,18 +163,26 @@ def draw_forest(screen, trees, camera):
 
         if -80 < sx < WIDTH + 80 and -30 < sy < HEIGHT + 30:
             pygame.draw.line(
-                screen, SHADOW,
+                screen,
+                SHADOW,
                 (int(sx), int(sy + 4)),
-                (int(sx + 48), int(sy + 10)), 12
+                (int(sx + 48), int(sy + 10)),
+                12
             )
+
             pygame.draw.line(
-                screen, TRUNK,
+                screen,
+                TRUNK,
                 (int(sx), int(sy)),
-                (int(sx + 48), int(sy + 6)), 8
+                (int(sx + 48), int(sy + 6)),
+                8
             )
+
             pygame.draw.circle(
-                screen, (105, 78, 51),
-                (int(sx + 48), int(sy + 6)), 4
+                screen,
+                (105, 78, 51),
+                (int(sx + 48), int(sy + 6)),
+                4
             )
 
     # Trees
@@ -142,46 +193,76 @@ def draw_forest(screen, trees, camera):
         sy = y - camera.y + HEIGHT // 2
 
         if (
-            sx < -size - 20 or sx > WIDTH + size + 20
-            or sy < -size - 40 or sy > HEIGHT + size + 40
+            sx < -size - 20
+            or sx > WIDTH + size + 20
+            or sy < -size - 40
+            or sy > HEIGHT + size + 40
         ):
             continue
 
         # Tree shadow
         pygame.draw.ellipse(
-            screen, SHADOW,
-            (int(sx - size), int(sy + 8),
-             size * 2 + 18, size + 12)
+            screen,
+            SHADOW,
+            (
+                int(sx - size),
+                int(sy + 8),
+                size * 2 + 18,
+                size + 12
+            )
         )
 
         # Trunk
         pygame.draw.rect(
-            screen, TRUNK,
-            (int(sx - 6), int(sy + 5), 12, size + 13)
+            screen,
+            TRUNK,
+            (
+                int(sx - 6),
+                int(sy + 5),
+                12,
+                size + 13
+            )
         )
 
         # Main canopy
         pygame.draw.circle(
-            screen, TREE,
-            (int(sx), int(sy)), size
+            screen,
+            TREE,
+            (int(sx), int(sy)),
+            size
         )
 
-        # Highlights
+        # Canopy highlights
         pygame.draw.circle(
-            screen, TREE_LIGHT,
-            (int(sx - size // 3), int(sy - size // 4)),
+            screen,
+            TREE_LIGHT,
+            (
+                int(sx - size // 3),
+                int(sy - size // 4)
+            ),
             max(5, size // 2)
         )
 
         pygame.draw.circle(
-            screen, BUSH,
-            (int(sx + size // 3), int(sy + size // 4)),
+            screen,
+            BUSH,
+            (
+                int(sx + size // 3),
+                int(sy + size // 4)
+            ),
             max(4, size // 3)
         )
 
-        # Small canopy details
+        # Small canopy detail
         pygame.draw.circle(
-            screen, TREE,
-            (int(sx + size // 2), int(sy - size // 3)),
+            screen,
+            TREE,
+            (
+                int(sx + size // 2),
+                int(sy - size // 3)
+            ),
             max(4, size // 3)
         )
+
+    # Restore normal drawing area
+    screen.set_clip(old_clip)
