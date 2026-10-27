@@ -10,7 +10,7 @@ from zombies import (
     draw_zombies,
 )
 from weapons import shoot, update_bullets, draw_bullets
-from ui import menu, end_screen, draw_text, draw_game_ui
+from ui import menu, end_screen, draw_text, draw_game_uisa
 
 pygame.init()
 

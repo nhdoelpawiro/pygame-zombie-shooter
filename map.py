@@ -31,7 +31,7 @@ def make_forest():
     rng = random.Random(12)
 
     # Generate trees only inside the playable map
-    for _ in range(180):
+    for _ in range(40):
         x = rng.randint(MAP_LEFT + 40, MAP_RIGHT - 40)
         y = rng.randint(MAP_TOP + 40, MAP_BOTTOM - 40)
 
