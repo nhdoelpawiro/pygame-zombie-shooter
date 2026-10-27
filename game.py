@@ -8,6 +8,45 @@ screen = pygame.display.set_mode((W, H))
 pygame.display.set_caption("Dead Woods")
 clock = pygame.time.Clock()
 
+
+def remove_background(image):
+    image = image.convert_alpha()
+
+    for x in range(image.get_width()):
+        for y in range(image.get_height()):
+            r, g, b, a = image.get_at((x, y))
+
+            # Zwarte achtergrond verwijderen
+            if r < 30 and g < 30 and b < 30:
+                image.set_at((x, y), (r, g, b, 0))
+
+            # Witte watermerken en witte achtergrond verwijderen
+            elif r > 235 and g > 235 and b > 235:
+                image.set_at((x, y), (r, g, b, 0))
+
+    return image
+
+zombie_image = pygame.image.load("zombie_image.jpeg").convert()
+zombie_image = pygame.transform.scale(zombie_image, (75, 95))
+zombie_image = remove_background(zombie_image)
+
+zombie_image = remove_background(zombie_image)
+
+snelle_image = pygame.image.load("snelle_image.png").convert()
+snelle_image = pygame.transform.scale(snelle_image, (60, 75))
+snelle_image = remove_background(snelle_image)
+
+tank_image = pygame.image.load("tank_image.webp").convert()
+tank_image = pygame.transform.scale(tank_image, (90, 105))
+tank_image = remove_background(tank_image)
+
+boss_image = pygame.image.load("boss_image.png").convert()
+boss_image = pygame.transform.scale(boss_image, (100, 120))
+boss_image = remove_background(boss_image)
+
+
+
+
 # Colors
 GREEN = (67, 72, 61)
 DARK = (42, 48, 41)
@@ -83,10 +122,10 @@ def new_zombie(zombie_type="normal"):
         return {
             "pos": pygame.Vector2(pos),
             "speed": random.uniform(0.4, 0.7),
-            "max_hp": 8,
-            "hp": 8,
+            "max_hp": 12,
+            "hp": 12,
             "type": "tank",
-            "size": 25
+            "size": 20
         }
 
     # Boss zombie
@@ -95,9 +134,11 @@ def new_zombie(zombie_type="normal"):
             "pos": pygame.Vector2(pos),
             "speed": 0.5,
             "max_hp": 20,
+            "hp": 20,
             "type": "boss",
-            "size": 40
+            "size": 30
         }
+
 
 
 
@@ -105,39 +146,55 @@ def new_zombie(zombie_type="normal"):
 def start_round():
     global round_no, round_timer
 
-    round_no += 1
     round_timer = 90
 
-    amount = 10 + (round_no - 1) * 15
+    amount = 10 + (round_no - 1) * 5
 
     for _ in range(amount):
         chance = random.random()
 
+        # Ronde 1-2: alleen normale zombies
         if round_no <= 2:
             zombie_type = "normal"
 
+        # Ronde 3-4: snelle zombies worden geïntroduceerd
         elif round_no <= 4:
-            zombie_type = "fast" if chance < 0.25 else "normal"
-
-        elif round_no <= 7:
-            if chance < 0.15:
-                zombie_type = "tank"
-            elif chance < 0.40:
+            if chance < 0.20:
                 zombie_type = "fast"
             else:
                 zombie_type = "normal"
 
-        else:
-            if chance < 0.05:
-                zombie_type = "boss"
-            elif chance < 0.20:
+        # Ronde 5-6: tank-zombies komen erbij
+        elif round_no <= 6:
+            if chance < 0.15:
                 zombie_type = "tank"
-            elif chance < 0.45:
+            elif chance < 0.35:
+                zombie_type = "fast"
+            else:
+                zombie_type = "normal"
+
+        # Ronde 7-8: meer sterke zombies
+        elif round_no <= 8:
+            if chance < 0.10:
+                zombie_type = "tank"
+            elif chance < 0.35:
+                zombie_type = "fast"
+            else:
+                zombie_type = "normal"
+
+        # Ronde 9-10: boss-zombies verschijnen
+        else:
+            if chance < 0.10:
+                zombie_type = "boss"
+            elif chance < 0.25:
+                zombie_type = "tank"
+            elif chance < 0.50:
                 zombie_type = "fast"
             else:
                 zombie_type = "normal"
 
         zombies.append(new_zombie(zombie_type))
+
 
 
 def draw_forest():
@@ -181,57 +238,56 @@ def draw_player():
                      player + direction * 34, 4)
 
 
+
+
 def draw_zombies():
+    time = pygame.time.get_ticks()
+
     for z in zombies:
         p = z["pos"]
         size = z["size"]
 
+        # Kies de juiste afbeelding
         if z["type"] == "normal":
-            head_color = (145, 155, 103)
-            body_color = (50, 53, 49)
-
+            image = zombie_image
         elif z["type"] == "fast":
-            head_color = (220, 70, 70)
-            body_color = (100, 35, 35)
-
+            image = snelle_image
         elif z["type"] == "tank":
-            head_color = (75, 105, 75)
-            body_color = (35, 45, 35)
-
+            image = tank_image
         elif z["type"] == "boss":
-            head_color = (150, 60, 170)
-            body_color = (55, 20, 65)
+            image = boss_image
 
-        pygame.draw.circle(screen, body_color,
-                           (int(p.x), int(p.y + size)), size)
+        # Loopanimatie: op en neer bewegen
+        bob = math.sin(time * 0.012 * (z["speed"] + 1)) * 4
 
-        pygame.draw.circle(screen, head_color,
-                           (int(p.x), int(p.y)), size)
+        # Een kleine kantelbeweging tijdens het lopen
+        angle = math.sin(time * 0.008 * (z["speed"] + 1)) * 8
 
-        # Rode ogen
-        pygame.draw.circle(screen, (255, 0, 0),
-                           (int(p.x - size // 3), int(p.y - size // 4)), 3)
+        # Draai de afbeelding een beetje
+        rotated_image = pygame.transform.rotate(image, angle)
 
-        pygame.draw.circle(screen, (255, 0, 0),
-                           (int(p.x + size // 3), int(p.y - size // 4)), 3)
+        # Teken de zombie
+        rect = rotated_image.get_rect(
+            center=(int(p.x), int(p.y + bob))
+        )
+        screen.blit(rotated_image, rect)
 
         # HP-balk
         bar_width = size * 2
-        hp_ratio = z["hp"] / z["max_hp"]
+        hp_ratio = max(0, z["hp"] / z["max_hp"])
 
         pygame.draw.rect(
-            screen,
-            (255, 0, 0),
+            screen, RED,
             (int(p.x - size), int(p.y - size - 8),
              bar_width, 4)
         )
 
         pygame.draw.rect(
-            screen,
-            (0, 255, 0),
+            screen, (0, 255, 0),
             (int(p.x - size), int(p.y - size - 8),
              int(bar_width * hp_ratio), 4)
         )
+
 
 
 def shoot():
