@@ -2,15 +2,20 @@ import pygame
 import random
 from map import make_forest, draw_forest
 
-pygame.init()
-
-if not pygame.mixer.get_init():
-    pygame.mixer.init()
 
 WIDTH, HEIGHT = 1000, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Dead Woods")
 clock = pygame.time.Clock()
+
+pygame.init()
+
+ak_img = pygame.image.load("./ak47.png").convert_alpha()
+ak_img = pygame.transform.scale(ak_img, (90, 60))
+
+if not pygame.mixer.get_init():
+    pygame.mixer.init()
+
 
 WHITE = (235, 235, 225)
 RED = (190, 45, 45)
@@ -176,6 +181,7 @@ def update_player():
 
 def draw_player():
     center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
+
     direction = pygame.Vector2(pygame.mouse.get_pos()) - center
 
     if direction.length_squared() > 0:
@@ -184,19 +190,26 @@ def draw_player():
         direction = pygame.Vector2(1, 0)
 
     pygame.draw.circle(screen, (55, 57, 60), center, 18)
+
     pygame.draw.rect(
         screen, (45, 45, 48),
         (center.x - 14, center.y + 8, 28, 25)
     )
+
     pygame.draw.circle(
         screen, (206, 166, 128),
         center + direction * 4, 12
     )
-    pygame.draw.line(
-        screen, (30, 30, 30),
-        center - direction * 15,
-        center + direction * 42, 7
-    )
+
+    # Rotate the AK toward the mouse
+    angle = -pygame.math.Vector2(1, 0).angle_to(direction)
+    rotated_ak = pygame.transform.rotate(ak_img, angle)
+
+    # Position the weapon in front of the player
+    weapon_pos = center + direction * 30
+    weapon_rect = rotated_ak.get_rect(center=weapon_pos)
+
+    screen.blit(rotated_ak, weapon_rect)
 
 
 def shoot():
