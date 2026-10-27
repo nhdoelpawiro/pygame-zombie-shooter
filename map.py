@@ -27,8 +27,6 @@ def make_forest():
     for _ in range(180):
         x = random.randint(-1400, 1400)
         y = random.randint(-1200, 1200)
-
-        # Keep the starting area clear
         if -180 < x < 180 and -100 < y < 300:
             continue
 
