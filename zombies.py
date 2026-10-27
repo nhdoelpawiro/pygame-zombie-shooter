@@ -1,7 +1,6 @@
 import math
 import random
 import pygame
-
 from settings import WIDTH, HEIGHT, RED
 
 def load_zombie_images():
@@ -98,7 +97,6 @@ def start_round(zombies, round_no):
 
 
 def update_zombies(zombies, player, health):
-    """Move zombies toward the player and return updated health."""
     for zombie in zombies:
         direction = player - zombie["pos"]
 
@@ -108,7 +106,6 @@ def update_zombies(zombies, player, health):
         direction = direction.normalize()
         zombie["pos"] += direction * zombie["speed"]
 
-        # Damage the player when a zombie gets close.
         if zombie["pos"].distance_to(player) < zombie["size"] + 12:
             health -= 0.2
 
@@ -134,13 +131,3 @@ def draw_zombies(screen, zombies, images, camera):
             center=(int(screen_pos.x), int(screen_pos.y + bob))
         )
         screen.blit(rotated, rect)
-
-        ratio = max(0, zombie["hp"] / zombie["max_hp"])
-        bar_x = int(screen_pos.x - size)
-        bar_y = int(screen_pos.y - size - 8)
-
-        pygame.draw.rect(screen, RED, (bar_x, bar_y, size * 2, 4))
-        pygame.draw.rect(
-            screen, (0, 255, 0),
-            (bar_x, bar_y, int(size * 2 * ratio), 4)
-        )
