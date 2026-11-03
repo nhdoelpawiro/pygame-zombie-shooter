@@ -1,3 +1,4 @@
+
 import pygame
 import random
 
@@ -38,6 +39,9 @@ round_no = 1
 round_timer = 0
 shoot_timer = 0
 zombie_sound_timer = 120
+
+# Shooting interval in frames
+SHOOT_COOLDOWN = 10
 
 zombies = []
 bullets = []
@@ -137,7 +141,7 @@ def menu():
     quit_button = make_button("QUIT", 380, 65)
 
     draw_text(
-        "WASD = Move   Mouse = Aim   Left Click = Shoot",
+        "WASD = Move   Mouse = Aim   Hold Left Click = Shoot",
         small_font,
         WHITE,
         (WIDTH // 2, 490)
@@ -323,6 +327,7 @@ while running:
 
                     if paused:
                         walk_channel.stop()
+                        shoot_channel.stop()
                         music_channel.pause()
                     else:
                         music_channel.unpause()
@@ -351,10 +356,6 @@ while running:
                 elif pause_quit_button and pause_quit_button.collidepoint(event.pos):
                     running = False
 
-            elif shoot_timer <= 0:
-                shoot()
-                shoot_timer = 10
-
     if not running:
         break
 
@@ -375,16 +376,28 @@ while running:
         pygame.display.flip()
         continue
 
+    # Player movement
     update_player(player, speed, walk_channel, walk_sound)
     camera.update(player)
 
+    # Continuous shooting while holding LMB
+    mouse_buttons = pygame.mouse.get_pressed()
+
+    if mouse_buttons[0] and shoot_timer <= 0:
+        shoot()
+        shoot_timer = SHOOT_COOLDOWN
+
+    # Update bullets
     update_bullets()
 
+    # Update zombies
     health = update_zombies(zombies, player, health)
 
+    # Timers
     shoot_timer = max(0, shoot_timer - 1)
     round_timer = max(0, round_timer - 1)
 
+    # Game over check
     if health <= 0:
         health = 0
         game_over = True
@@ -398,6 +411,7 @@ while running:
         else:
             game_over = True
 
+    # Drawing
     draw_forest(screen, trees, camera)
     draw_zombies(screen, zombies, zombie_images, camera)
     draw_bullets()
