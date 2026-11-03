@@ -4,7 +4,6 @@ from settings import (
     WIDTH, HEIGHT, WHITE, RED, BLACK
 )
 
-
 def draw_text(screen, text, font, color, position):
     image = font.render(text, True, color)
     screen.blit(image, image.get_rect(center=position))
@@ -56,7 +55,7 @@ def end_screen(screen, fonts, health):
         screen, title, fonts["big"], color,
         (WIDTH // 2, 220)
     )
-
+    
     return make_button(
         screen, "PLAY AGAIN", 320, fonts["normal"]
     )

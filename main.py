@@ -1,5 +1,5 @@
-
 import pygame
+import random
 
 from settings import WIDTH, HEIGHT, RED
 from map import make_forest, draw_forest
@@ -47,7 +47,12 @@ zombie_images = load_zombie_images()
 ak_img = pygame.image.load("./assets/ak47.png").convert_alpha()
 ak_img = pygame.transform.scale(ak_img, (90, 60))
 
-music = pygame.mixer.Sound("./sfx/banditradio.mp3")
+# Load music tracks
+music_tracks = [
+    pygame.mixer.Sound(f"./sfx/music{i}.mp3")
+    for i in range(1, 3)
+]
+
 menu_music = pygame.mixer.Sound("./sfx/menu.mp3")
 shoot_sound = pygame.mixer.Sound("./sfx/shoot.mp3")
 walk_sound = pygame.mixer.Sound("./sfx/walk.mp3")
@@ -57,7 +62,10 @@ zombie_sounds = [
     for i in range(1, 5)
 ]
 
-music.set_volume(0.5)
+# Set music volumes
+for track in music_tracks:
+    track.set_volume(0.5)
+
 menu_music.set_volume(0.4)
 shoot_sound.set_volume(0.7)
 walk_sound.set_volume(0.7)
@@ -67,9 +75,13 @@ for sound in zombie_sounds:
 
 walk_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
+
 zombie_channels = [
     pygame.mixer.Channel(i) for i in range(3, 7)
 ]
+
+# Music channel
+music_channel = pygame.mixer.Channel(0)
 
 game_started = False
 game_over = False
@@ -174,12 +186,19 @@ def end_screen():
 
 
 def stop_game_sounds():
-    music.stop()
+    music_channel.stop()
     walk_channel.stop()
     shoot_channel.stop()
 
     for channel in zombie_channels:
         channel.stop()
+
+
+def play_random_music():
+    music_channel.stop()
+
+    track = random.choice(music_tracks)
+    music_channel.play(track, loops=-1)
 
 
 def reset_game():
@@ -205,7 +224,8 @@ def reset_game():
 
     stop_game_sounds()
     menu_music.stop()
-    music.play(-1)
+
+    play_random_music()
 
     start_round(zombies, round_no)
 
@@ -286,6 +306,7 @@ def draw_game_ui():
     )
 
 
+# Start menu music
 menu_music.play(-1)
 
 while running:
@@ -302,14 +323,16 @@ while running:
 
                     if paused:
                         walk_channel.stop()
-                    elif not music.get_num_channels():
-                        music.play(-1)
+                        music_channel.pause()
+                    else:
+                        music_channel.unpause()
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if not game_started:
                 if start_button and start_button.collidepoint(event.pos):
                     game_started = True
                     reset_game()
+
                 elif menu_quit_button and menu_quit_button.collidepoint(event.pos):
                     running = False
 
@@ -320,8 +343,11 @@ while running:
             elif paused:
                 if resume_button and resume_button.collidepoint(event.pos):
                     paused = False
+                    music_channel.unpause()
+
                 elif pause_restart_button and pause_restart_button.collidepoint(event.pos):
                     reset_game()
+
                 elif pause_quit_button and pause_quit_button.collidepoint(event.pos):
                     running = False
 
@@ -368,6 +394,7 @@ while running:
             round_no += 1
             start_round(zombies, round_no)
             round_timer = 90
+
         else:
             game_over = True
 
