@@ -1,16 +1,16 @@
 
-import pygame
 import random
 
-from settings import WIDTH, HEIGHT, RED
-from map import make_forest, draw_forest
-from player import update_player, draw_player
+import pygame
+
+from map import draw_forest, make_forest
+from player import draw_player, update_player
+from settings import HEIGHT, RED, WIDTH
 from zombies import (
+    draw_zombies,
     load_zombie_images,
-    new_zombie,
     start_round,
     update_zombies,
-    draw_zombies,
 )
 
 pygame.init()
