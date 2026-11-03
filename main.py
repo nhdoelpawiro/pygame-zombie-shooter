@@ -262,11 +262,15 @@ def update_bullets():
         for zombie in zombies[:]:
             if bullet["pos"].distance_to(zombie["pos"]) < zombie["size"] + 5:
                 bullets.remove(bullet)
+            
                 zombie["hp"] -= 1
-
+            
+                # Trigger red damage flash (6 frames)
+                zombie["hit_timer"] = 6
+            
                 if zombie["hp"] <= 0:
                     zombies.remove(zombie)
-
+            
                 break
 
 

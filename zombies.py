@@ -112,6 +112,7 @@ def update_zombies(zombies, player, health):
     return max(0, health)
 
 
+
 def draw_zombies(screen, zombies, images, camera):
     time = pygame.time.get_ticks()
     screen_center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
@@ -121,13 +122,60 @@ def draw_zombies(screen, zombies, images, camera):
         size = zombie["size"]
 
         image = images[zombie["type"]]
+
         bob = math.sin(time * 0.012 * (zombie["speed"] + 1)) * 4
         angle = math.sin(time * 0.008 * (zombie["speed"] + 1)) * 8
 
         rotated = pygame.transform.rotate(image, angle)
 
         screen_pos = p - camera + screen_center
+
         rect = rotated.get_rect(
             center=(int(screen_pos.x), int(screen_pos.y + bob))
         )
-        screen.blit(rotated, rect)
+
+        # Red flash when zombie is hit
+        if zombie.get("hit_timer", 0) > 0:
+            red_image = rotated.copy()
+            red_image.fill((255, 0, 0, 255), special_flags=pygame.BLEND_RGBA_MULT)
+            screen.blit(red_image, rect)
+
+            zombie["hit_timer"] -= 1
+        else:
+            screen.blit(rotated, rect)
+
+        # Health bar
+        bar_width = size * 3
+        bar_height = 6
+
+        bar_x = int(screen_pos.x - bar_width / 2)
+        bar_y = int(screen_pos.y - rect.height / 2 - 12)
+
+        # Background (black)
+        pygame.draw.rect(
+            screen,
+            (30, 30, 30),
+            (bar_x, bar_y, bar_width, bar_height)
+        )
+
+        # Current health
+        health_percentage = zombie["hp"] / zombie["max_hp"]
+
+        pygame.draw.rect(
+            screen,
+            (0, 220, 0),
+            (
+                bar_x,
+                bar_y,
+                int(bar_width * health_percentage),
+                bar_height
+            )
+        )
+
+        # Health bar border
+        pygame.draw.rect(
+            screen,
+            (255, 255, 255),
+            (bar_x, bar_y, bar_width, bar_height),
+            1
+        )
